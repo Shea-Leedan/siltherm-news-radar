@@ -22,6 +22,7 @@ COMPANY_POSITIONING = (
     "advanced insulation materials and thermal management solutions"
 )
 TARGET_MARKETS = ["Europe", "Germany", "DACH"]
+PUBLIC_APP_URL = "https://siltherm-news-radar.streamlit.app"
 
 
 # 这些关键词会影响行业分类。后续你可以直接在这里增删关键词。
@@ -624,6 +625,7 @@ def main() -> None:
         page_title="Siltherm 行业新闻雷达",
         page_icon="ST",
         layout="wide",
+        initial_sidebar_state="collapsed",
     )
 
     st.markdown(
@@ -632,48 +634,57 @@ def main() -> None:
         :root {
             --ink: #111827;
             --muted: #526070;
-            --line: #dbe3ec;
+            --line: #e7edf4;
             --panel: #ffffff;
-            --blue: #1d4ed8;
-            --green: #0f766e;
-            --amber: #b45309;
-            --red: #b91c1c;
+            --mint: #dff7ef;
+            --mint-ink: #0f766e;
+            --rose: #ffe8ef;
+            --rose-ink: #be496f;
+            --sky: #e3f2ff;
+            --sky-ink: #2563eb;
+            --butter: #fff4c9;
+            --butter-ink: #a16207;
+            --lavender: #efe9ff;
+            --lavender-ink: #6d5bd0;
         }
-        .stApp {background: #f5f7fa;}
-        .main .block-container {padding-top: 1.1rem; max-width: 1260px;}
+        .stApp {background: #fbfcff;}
+        .main .block-container {padding-top: 1rem; max-width: 1240px;}
         h1, h2, h3, p {letter-spacing: 0;}
         div[data-testid="stSidebar"] {background: #ffffff; border-right: 1px solid var(--line);}
         .radar-hero {
-            background: #111827;
-            color: #f8fafc;
+            background: #ffffff;
+            color: var(--ink);
             border-radius: 8px;
-            padding: 22px 24px;
+            padding: 24px 26px;
             margin-bottom: 16px;
-            border: 1px solid #111827;
+            border: 1px solid var(--line);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
         }
-        .radar-hero:after {
-            content: "";
-            position: absolute;
-            right: -80px;
-            top: -80px;
-            width: 260px;
-            height: 260px;
-            border: 1px solid rgba(255,255,255,.18);
-            border-radius: 999px;
-            box-shadow: 0 0 0 34px rgba(15,118,110,.18), 0 0 0 74px rgba(29,78,216,.14);
+        .color-ribbon {
+            display:grid;
+            grid-template-columns: 1.2fr .9fr 1fr .8fr;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .color-ribbon span {
+            height: 8px;
+            border-radius: 99px;
+            display:block;
         }
         .brand-row {display:flex; justify-content:space-between; gap:16px; align-items:flex-start; position:relative; z-index:1;}
-        .app-title {font-size: 2rem; line-height:1.15; font-weight: 780; margin-bottom: .35rem;}
-        .app-subtitle {color: #cbd5e1; max-width: 720px;}
+        .app-title {font-size: 2rem; line-height:1.15; font-weight: 780; margin-bottom: .38rem;}
+        .app-subtitle {color: var(--muted); max-width: 760px;}
         .local-badge {
-            border: 1px solid rgba(255,255,255,.28);
+            border: 1px solid #d8e7f7;
             border-radius: 6px;
             padding: 7px 9px;
-            color: #dbeafe;
+            color: var(--sky-ink);
+            background: var(--sky);
             font-size: .82rem;
             white-space: nowrap;
+            font-weight: 700;
         }
         .radar-strip {
             display: grid;
@@ -684,13 +695,37 @@ def main() -> None:
             z-index: 1;
         }
         .radar-tile {
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.14);
+            background: #ffffff;
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 11px 12px;
         }
         .radar-tile b {display:block; font-size:1.05rem;}
-        .radar-tile span {display:block; margin-top:3px; color:#cbd5e1; font-size:.83rem;}
+        .radar-tile span {display:block; margin-top:3px; color:var(--muted); font-size:.83rem;}
+        .tile-mint {background: var(--mint); border-color: #cceee4;}
+        .tile-rose {background: var(--rose); border-color: #f7d1de;}
+        .tile-butter {background: var(--butter); border-color: #f4e5a6;}
+        .steps {
+            display:grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: -4px 0 16px;
+        }
+        .step-box {
+            background:#fff;
+            border:1px solid var(--line);
+            border-radius:8px;
+            padding:13px 14px;
+        }
+        .step-box strong {
+            display:block;
+            color:var(--ink);
+            margin-bottom:4px;
+        }
+        .step-box span {
+            color:var(--muted);
+            font-size:.9rem;
+        }
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -724,21 +759,32 @@ def main() -> None:
             align-items: start;
         }
         .result-card h3 {font-size: 1.15rem; margin: 0.1rem 0 .55rem;}
-        .eyebrow {font-size: .76rem; color: var(--green); font-weight: 800; text-transform: uppercase;}
+        .eyebrow {font-size: .76rem; color: var(--mint-ink); font-weight: 800; text-transform: uppercase;}
         .score {color: #fff; min-width: 54px; text-align: center; border-radius: 6px; padding: 8px 10px; font-weight: 760;}
         .meta-row {display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;}
         .meta-row span {background: #eef2f7; color: #334155; border-radius: 6px; padding: 5px 8px; font-size: .82rem;}
         .empty-state {
-            border: 1px dashed #b6c3d1;
+            border: 1px dashed #cad7e5;
             border-radius: 8px;
             padding: 22px;
-            background: #fbfdff;
+            background: #fffefe;
             color: var(--muted);
+        }
+        div.stButton > button[kind="primary"] {
+            background: #111827;
+            border: 1px solid #111827;
+            color: #ffffff;
+            border-radius: 8px;
+            font-weight: 760;
+        }
+        div.stButton > button:not([kind="primary"]) {
+            border-radius: 8px;
         }
         @media (max-width: 820px) {
             .brand-row {display:block;}
             .local-badge {display:inline-block; margin-top: 12px;}
             .radar-strip {grid-template-columns: 1fr;}
+            .steps {grid-template-columns: 1fr;}
         }
         </style>
         """,
@@ -751,18 +797,29 @@ def main() -> None:
     st.markdown(
         f"""
         <section class="radar-hero">
+          <div class="color-ribbon">
+            <span style="background:#dff7ef"></span>
+            <span style="background:#ffe8ef"></span>
+            <span style="background:#e3f2ff"></span>
+            <span style="background:#fff4c9"></span>
+          </div>
           <div class="brand-row">
             <div>
               <div class="app-title">Siltherm 行业新闻雷达</div>
-              <div class="app-subtitle">{COMPANY_NAME}: {COMPANY_POSITIONING} · Europe / Germany / DACH</div>
+              <div class="app-subtitle">把欧洲 / 德国 / DACH 的行业新闻快速变成可跟进的销售线索、岗位建议和英文外联草稿。</div>
             </div>
-            <div class="local-badge">LOCAL WEB APP · http://localhost:8501</div>
+            <div class="local-badge">PUBLIC WEB APP · siltherm-news-radar.streamlit.app</div>
           </div>
           <div class="radar-strip">
-            <div class="radar-tile"><b>7 个重点赛道</b><span>EV、ESS、户储、VPP、AI 数据中心、电力柜、热安全</span></div>
-            <div class="radar-tile"><b>1-5 分销售相关性</b><span>按区域、行业、项目和热管理信号自动评分</span></div>
-            <div class="radar-tile"><b>CSV 导出</b><span>可导入飞书多维表格继续跟进</span></div>
+            <div class="radar-tile tile-mint"><b>7 个重点赛道</b><span>EV、ESS、户储、VPP、AI 数据中心、电力柜、热安全</span></div>
+            <div class="radar-tile tile-rose"><b>1-5 分销售相关性</b><span>按区域、行业、项目和热管理信号自动评分</span></div>
+            <div class="radar-tile tile-butter"><b>CSV 导出</b><span>可导入飞书多维表格继续跟进</span></div>
           </div>
+        </section>
+        <section class="steps">
+          <div class="step-box"><strong>1. 输入新闻</strong><span>用关键词扫新闻，或粘贴新闻链接 / 正文。</span></div>
+          <div class="step-box"><strong>2. 看销售价值</strong><span>重点看评分、分类、公司、国家和项目线索。</span></div>
+          <div class="step-box"><strong>3. 拿去外联</strong><span>复制 LinkedIn 话术和邮件草稿，或导出 CSV。</span></div>
         </section>
         """,
         unsafe_allow_html=True,
@@ -773,7 +830,7 @@ def main() -> None:
     with input_col:
         st.markdown('<div class="panel">', unsafe_allow_html=True)
         st.markdown('<div class="panel-title">新闻输入</div>', unsafe_allow_html=True)
-        st.markdown('<div class="hint-line">输入关键词扫新闻，或粘贴单条新闻链接/正文做线索判断。</div>', unsafe_allow_html=True)
+        st.markdown('<div class="hint-line">新手建议先用“关键词”，例如 BESS thermal safety Germany。</div>', unsafe_allow_html=True)
         input_type = st.radio(
             "选择输入类型",
             ["关键词", "新闻链接", "新闻正文"],
@@ -870,7 +927,7 @@ def main() -> None:
             st.markdown(
                 """
                 <div class="empty-state">
-                  暂无线索。左侧输入关键词、新闻链接或正文后点击“分析新闻”。
+                  这里会显示销售线索卡片。先在左侧输入关键词，点击“分析新闻”，再看 1-5 分评分和外联草稿。
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -879,8 +936,8 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Siltherm Radar")
-        st.caption("本地网页地址")
-        st.code("http://localhost:8501")
+        st.caption("公网网页地址")
+        st.code(PUBLIC_APP_URL)
         st.header("重点行业")
         st.write("EV battery packs")
         st.write("BESS containers")

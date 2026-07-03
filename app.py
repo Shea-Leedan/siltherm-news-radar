@@ -25,8 +25,31 @@ TARGET_MARKETS = ["Europe", "Germany", "DACH"]
 PUBLIC_APP_URL = "https://siltherm-news-radar.streamlit.app"
 
 
-# 这些关键词会影响行业分类。后续你可以直接在这里增删关键词。
+# 这些关键词会影响行业分类。现在只保留用户要看的 3 个大类：ESS / EV / AI。
 CATEGORY_KEYWORDS: Dict[str, List[str]] = {
+    "ESS": [
+        "bess",
+        "battery energy storage",
+        "energy storage system",
+        "grid-scale storage",
+        "containerized storage",
+        "storage container",
+        "utility-scale storage",
+        "residential energy storage",
+        "home battery",
+        "household storage",
+        "solar storage",
+        "behind-the-meter",
+        "virtual power plant",
+        "vpp",
+        "储能",
+        "储能集装箱",
+        "大型储能",
+        "户储",
+        "家庭储能",
+        "家用储能",
+        "虚拟电厂",
+    ],
     "EV": [
         "ev",
         "electric vehicle",
@@ -41,29 +64,7 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
         "动力电池",
         "电池包",
     ],
-    "ESS": [
-        "bess",
-        "battery energy storage",
-        "energy storage system",
-        "grid-scale storage",
-        "containerized storage",
-        "storage container",
-        "utility-scale storage",
-        "储能",
-        "储能集装箱",
-        "大型储能",
-    ],
-    "户储": [
-        "residential energy storage",
-        "home battery",
-        "household storage",
-        "solar storage",
-        "behind-the-meter",
-        "户储",
-        "家庭储能",
-        "家用储能",
-    ],
-    "AI数据中心": [
+    "AI": [
         "ai data center",
         "data centre",
         "data center",
@@ -76,8 +77,6 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
         "数据中心",
         "智算中心",
         "算力",
-    ],
-    "电力柜": [
         "electrical cabinet",
         "control cabinet",
         "switchgear",
@@ -90,25 +89,13 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
         "电力柜",
         "配电柜",
         "控制柜",
-    ],
-    "工业热管理": [
-        "thermal management",
-        "insulation",
-        "thermal insulation",
-        "heat shield",
-        "fire protection",
-        "thermal runaway",
-        "flame retardant",
-        "temperature control",
-        "工业热管理",
-        "隔热",
-        "热失控",
-        "阻燃",
+        "industrial thermal management",
+        "critical power",
     ],
 }
 
 
-# VPP 是重点行业信号，但最终仍映射到 ESS / 户储 / 电力系统相关销售场景。
+# 这些不再作为分类展示，而是作为销售触发信号保留。
 SIGNAL_KEYWORDS: Dict[str, List[str]] = {
     "VPP": ["vpp", "virtual power plant", "虚拟电厂", "aggregator", "demand response"],
     "battery thermal safety": [
@@ -143,6 +130,14 @@ SIGNAL_KEYWORDS: Dict[str, List[str]] = {
 }
 
 
+# 自动新闻雷达会按这 3 个大类去扫 Google News RSS。每个主题都自动加 Europe / Germany / DACH。
+TRACKED_NEWS_QUERIES: Dict[str, str] = {
+    "ESS": "BESS energy storage thermal safety battery storage",
+    "EV": "EV battery pack thermal safety electric vehicle battery",
+    "AI": "AI data center power infrastructure critical power thermal management",
+}
+
+
 COUNTRY_ALIASES: Dict[str, List[str]] = {
     "Germany": ["germany", "german", "deutschland", "德国"],
     "Austria": ["austria", "österreich", "oesterreich", "奥地利"],
@@ -164,6 +159,15 @@ COUNTRY_ALIASES: Dict[str, List[str]] = {
 
 
 JOB_TITLE_MAP: Dict[str, List[str]] = {
+    "ESS": [
+        "BESS Product Manager",
+        "Energy Storage System Engineering Manager",
+        "Battery Safety / Compliance Manager",
+        "Project Procurement Manager",
+        "Grid Storage Technical Director",
+        "Residential ESS Product Manager",
+        "VPP / Aggregation Partnerships Manager",
+    ],
     "EV": [
         "Battery Pack Engineering Manager",
         "Thermal Management Engineer",
@@ -171,35 +175,17 @@ JOB_TITLE_MAP: Dict[str, List[str]] = {
         "EV Platform / Battery System Product Manager",
         "Strategic Sourcing Manager - Battery Components",
     ],
-    "ESS": [
-        "BESS Product Manager",
-        "Energy Storage System Engineering Manager",
-        "Battery Safety / Compliance Manager",
-        "Project Procurement Manager",
-        "Grid Storage Technical Director",
-    ],
-    "户储": [
-        "Residential ESS Product Manager",
-        "Home Battery Engineering Manager",
-        "Solar Storage Product Lead",
-        "Quality and Safety Manager",
-        "Procurement Manager - Storage Systems",
-    ],
-    "AI数据中心": [
+    "AI": [
         "Data Center Power Infrastructure Manager",
         "Critical Power Engineering Manager",
         "Data Center Design Manager",
         "Thermal / Fire Safety Manager",
         "Procurement Manager - Power Systems",
-    ],
-    "电力柜": [
         "Electrical Cabinet Product Manager",
         "Switchgear Engineering Manager",
         "Electrical Design Engineer",
         "Panel Builder Technical Director",
         "Procurement Manager - Enclosures and Insulation",
-    ],
-    "工业热管理": [
         "Thermal Management Engineering Manager",
         "Industrial Safety Manager",
         "Materials Engineering Manager",
@@ -211,6 +197,8 @@ JOB_TITLE_MAP: Dict[str, List[str]] = {
 
 CSV_COLUMNS = [
     "分析时间",
+    "雷达主题",
+    "发布时间",
     "输入类型",
     "标题",
     "链接",
@@ -300,6 +288,14 @@ def fetch_url_text(url: str) -> Tuple[str, str]:
     return title, body
 
 
+def split_news_title_source(title: str) -> Tuple[str, str]:
+    """Google News 标题常见格式是“标题 - 媒体名”，这里拆一下来源。"""
+    if " - " not in title:
+        return title, ""
+    clean_title, source = title.rsplit(" - ", 1)
+    return clean_title.strip(), source.strip()
+
+
 def fetch_google_news_rss(keyword: str, limit: int = 5) -> List[Dict[str, str]]:
     """用 Google News RSS 抓取关键词新闻，适合第一版本地雷达使用。"""
     query = quote_plus(f"{keyword} Germany OR DACH OR Europe")
@@ -314,7 +310,8 @@ def fetch_google_news_rss(keyword: str, limit: int = 5) -> List[Dict[str, str]]:
     root = ET.fromstring(xml_text)
     items: List[Dict[str, str]] = []
     for item in root.findall(".//item")[:limit]:
-        title = normalize_text(item.findtext("title", default=""))
+        raw_title = normalize_text(item.findtext("title", default=""))
+        title, source = split_news_title_source(raw_title)
         link = normalize_text(item.findtext("link", default=""))
         description = normalize_text(re.sub("<.*?>", " ", item.findtext("description", default="")))
         published = normalize_text(item.findtext("pubDate", default=""))
@@ -322,10 +319,74 @@ def fetch_google_news_rss(keyword: str, limit: int = 5) -> List[Dict[str, str]]:
             {
                 "title": title,
                 "link": link,
+                "source": source,
+                "published": published,
                 "text": f"{title}. {description}. Published: {published}",
             }
         )
     return items
+
+
+def scan_radar_news(per_topic_limit: int = 5, extra_keyword: str = "") -> List[Dict[str, str]]:
+    """自动扫描多个重点主题，生成新闻线索池。"""
+    seen = set()
+    records: List[Dict[str, str]] = []
+    queries = dict(TRACKED_NEWS_QUERIES)
+    if extra_keyword.strip():
+        queries["自定义关键词"] = extra_keyword.strip()
+
+    for topic, keyword in queries.items():
+        try:
+            items = fetch_google_news_rss(keyword, limit=per_topic_limit)
+        except Exception:
+            # 单个主题失败不影响其他主题扫描。
+            continue
+
+        for item in items:
+            key = item["link"] or item["title"].lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            record = analyze_item(item["title"], item["link"], item["text"], "自动雷达")
+            categories = record_categories(record)
+            if topic in {"ESS", "EV", "AI"} and topic not in categories:
+                categories = [topic] if categories == ["待判断"] else [topic] + categories
+                signals = (
+                    []
+                    if record.get("重点信号") == "未识别"
+                    else [signal.strip() for signal in record.get("重点信号", "").split("/") if signal.strip()]
+                )
+                countries = (
+                    []
+                    if record.get("国家/地区") == "待补充"
+                    else [country.strip() for country in record.get("国家/地区", "").split("；") if country.strip()]
+                )
+                company = "" if record.get("涉及公司") == "待补充" else record.get("涉及公司", "").split("；")[0]
+                jobs = recommend_job_titles(categories, signals)
+                email_subject, email_body = generate_cold_email(
+                    company,
+                    record.get("标题", ""),
+                    categories,
+                    countries,
+                    jobs,
+                )
+                record["分类"] = " / ".join(categories)
+                record["推荐联系岗位"] = "；".join(jobs)
+                record["LinkedIn建联话术"] = generate_linkedin_note(
+                    company,
+                    record.get("标题", ""),
+                    categories,
+                )
+                record["英文冷邮件主题"] = email_subject
+                record["英文冷邮件正文"] = email_body
+            record["雷达主题"] = topic
+            record["发布时间"] = item.get("published", "")
+            if item.get("source"):
+                record["标题"] = f'{record["标题"]} · {item["source"]}'
+            records.append(record)
+
+    records.sort(key=lambda r: int(r.get("相关性评分", "1")), reverse=True)
+    return records
 
 
 def summarize_news(title: str, text: str) -> str:
@@ -447,13 +508,27 @@ def score_relevance(text: str, categories: List[str], countries: List[str], sign
 
     if any(category != "待判断" for category in categories):
         score += 1
-        reasons.append("命中 Siltherm 重点行业")
+        reasons.append("命中 Siltherm 核心分类")
 
     if any(country in {"Germany", "Austria", "Switzerland", "Europe"} for country in countries):
         score += 1
         reasons.append("涉及欧洲/德国/DACH 市场")
 
-    if "battery thermal safety" in signals or keyword_count(lower, CATEGORY_KEYWORDS["工业热管理"]) > 0:
+    thermal_terms = [
+        "thermal management",
+        "insulation",
+        "thermal insulation",
+        "heat shield",
+        "fire protection",
+        "thermal runaway",
+        "flame retardant",
+        "temperature control",
+        "工业热管理",
+        "隔热",
+        "热失控",
+        "阻燃",
+    ]
+    if "battery thermal safety" in signals or keyword_count(lower, thermal_terms) > 0:
         score += 1
         reasons.append("出现隔热、热管理、阻燃或电池热安全信号")
 
@@ -461,9 +536,9 @@ def score_relevance(text: str, categories: List[str], countries: List[str], sign
         score += 1
         reasons.append("出现项目、扩产、订单、合作或投资信号")
 
-    if "VPP" in signals and any(category in {"ESS", "户储"} for category in categories):
+    if "VPP" in signals and "ESS" in categories:
         score += 1
-        reasons.append("VPP 与储能/户储场景相关")
+        reasons.append("VPP 与 ESS 场景相关")
 
     score = max(1, min(score, 5))
     if not reasons:
@@ -618,6 +693,33 @@ def render_record(record: Dict[str, str]) -> None:
 
     with st.expander("查看结构化字段"):
         st.json({key: record[key] for key in CSV_COLUMNS if key in record})
+
+
+def record_categories(record: Dict[str, str]) -> List[str]:
+    """把记录里的分类字段拆成列表，方便页面筛选。"""
+    categories = [
+        category.strip()
+        for category in record.get("分类", "").split("/")
+        if category.strip()
+    ]
+    return categories or ["待判断"]
+
+
+def build_summary_rows(records: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """生成总结版表格，只保留销售筛选最需要看的字段。"""
+    rows: List[Dict[str, str]] = []
+    for record in records:
+        rows.append(
+            {
+                "评分": f'{record.get("相关性评分", "1")}/5',
+                "分类": record.get("分类", ""),
+                "标题": record.get("标题", ""),
+                "国家": record.get("国家/地区", ""),
+                "公司": record.get("涉及公司", ""),
+                "推荐联系岗位": record.get("推荐联系岗位", ""),
+            }
+        )
+    return rows
 
 
 def main() -> None:
@@ -793,6 +895,8 @@ def main() -> None:
 
     if "records" not in st.session_state:
         st.session_state.records = []
+    if "radar_records" not in st.session_state:
+        st.session_state.radar_records = []
 
     st.markdown(
         f"""
@@ -811,141 +915,292 @@ def main() -> None:
             <div class="local-badge">PUBLIC WEB APP · siltherm-news-radar.streamlit.app</div>
           </div>
           <div class="radar-strip">
-            <div class="radar-tile tile-mint"><b>7 个重点赛道</b><span>EV、ESS、户储、VPP、AI 数据中心、电力柜、热安全</span></div>
-            <div class="radar-tile tile-rose"><b>1-5 分销售相关性</b><span>按区域、行业、项目和热管理信号自动评分</span></div>
+            <div class="radar-tile tile-mint"><b>3 个核心分类</b><span>ESS、EV、AI，其他信息作为销售信号保留</span></div>
+            <div class="radar-tile tile-rose"><b>自动新闻池</b><span>一键扫描欧洲 / 德国 / DACH 相关新闻</span></div>
             <div class="radar-tile tile-butter"><b>CSV 导出</b><span>可导入飞书多维表格继续跟进</span></div>
           </div>
         </section>
         <section class="steps">
-          <div class="step-box"><strong>1. 输入新闻</strong><span>用关键词扫新闻，或粘贴新闻链接 / 正文。</span></div>
-          <div class="step-box"><strong>2. 看销售价值</strong><span>重点看评分、分类、公司、国家和项目线索。</span></div>
-          <div class="step-box"><strong>3. 拿去外联</strong><span>复制 LinkedIn 话术和邮件草稿，或导出 CSV。</span></div>
+          <div class="step-box"><strong>1. 自动扫新闻</strong><span>按 ESS / EV / AI 抓取大量新闻候选。</span></div>
+          <div class="step-box"><strong>2. 先看总结版</strong><span>快速扫评分、公司、国家和推荐岗位。</span></div>
+          <div class="step-box"><strong>3. 再逐条分析</strong><span>选择高分新闻，复制外联话术或导出 CSV。</span></div>
         </section>
         """,
         unsafe_allow_html=True,
     )
 
-    input_col, output_col = st.columns([0.92, 1.08], gap="large")
+    radar_tab, manual_tab = st.tabs(["自动新闻雷达", "手动分析"])
 
-    with input_col:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
-        st.markdown('<div class="panel-title">新闻输入</div>', unsafe_allow_html=True)
-        st.markdown('<div class="hint-line">新手建议先用“关键词”，例如 BESS thermal safety Germany。</div>', unsafe_allow_html=True)
-        input_type = st.radio(
-            "选择输入类型",
-            ["关键词", "新闻链接", "新闻正文"],
-            horizontal=True,
-        )
+    with radar_tab:
+        radar_control_col, radar_output_col = st.columns([0.85, 1.15], gap="large")
 
-        max_news = 5
-        title = ""
-        link = ""
-        body = ""
-        keyword = ""
-
-        if input_type == "关键词":
-            keyword = st.text_input(
-                "关键词",
-                value="BESS thermal safety Germany",
-                placeholder="例如：BESS thermal safety Germany",
+        with radar_control_col:
+            st.markdown('<div class="panel">', unsafe_allow_html=True)
+            st.markdown('<div class="panel-title">自动新闻池</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="hint-line">每天打开后先点这里，它会按 ESS / EV / AI 自动抓新闻候选。</div>',
+                unsafe_allow_html=True,
             )
-            max_news = st.slider("抓取新闻数量", 1, 10, 5)
-        elif input_type == "新闻链接":
-            link = st.text_input(
-                "新闻链接",
-                placeholder="https://example.com/news/article",
+            per_topic_limit = st.slider("每类抓取数量", 3, 15, 8, key="radar_limit")
+            extra_keyword = st.text_input(
+                "额外关键词（可选）",
+                placeholder="例如：thermal runaway Germany",
+                key="radar_extra_keyword",
             )
-        else:
-            title = st.text_input("新闻标题", placeholder="粘贴新闻标题")
-            body = st.text_area("新闻正文", height=260, placeholder="粘贴新闻正文或摘要")
-            link = st.text_input("原文链接（可选）")
-
-        analyze_clicked = st.button("分析新闻", type="primary", use_container_width=True)
-
-        clear_clicked = st.button("清空本页结果", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        if clear_clicked:
-            st.session_state.records = []
-            st.rerun()
-
-    with output_col:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
-        st.markdown('<div class="panel-title">销售线索结果</div>', unsafe_allow_html=True)
-        if analyze_clicked:
-            try:
-                new_records: List[Dict[str, str]] = []
-                if input_type == "关键词":
-                    if not keyword.strip():
-                        st.warning("请先输入关键词。")
-                    else:
-                        items = fetch_google_news_rss(keyword.strip(), limit=max_news)
-                        if not items:
-                            st.warning("没有抓到新闻。可以换一个关键词，或直接粘贴新闻链接/正文。")
-                        for item in items:
-                            new_records.append(
-                                analyze_item(
-                                    item["title"],
-                                    item["link"],
-                                    item["text"],
-                                    "关键词RSS",
-                                )
-                            )
-                elif input_type == "新闻链接":
-                    if not link.strip():
-                        st.warning("请先输入新闻链接。")
-                    else:
-                        fetched_title, fetched_text = fetch_url_text(link.strip())
-                        new_records.append(
-                            analyze_item(fetched_title, link.strip(), fetched_text, "新闻链接")
-                        )
-                else:
-                    if not body.strip() and not title.strip():
-                        st.warning("请先粘贴新闻标题或正文。")
-                    else:
-                        new_records.append(analyze_item(title, link, body, "新闻正文"))
-
-                st.session_state.records = new_records + st.session_state.records
-            except Exception as exc:
-                st.error(f"分析失败：{exc}")
-                st.info("如果网站无法抓取，可以复制新闻正文，切换到“新闻正文”再分析。")
-
-        records: List[Dict[str, str]] = st.session_state.records
-        if records:
-            csv_bytes = records_to_csv(records)
-            st.download_button(
-                "导出 CSV",
-                data=csv_bytes,
-                file_name=f"siltherm_news_radar_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
+            scan_clicked = st.button(
+                "一键扫描 ESS / EV / AI 新闻",
+                type="primary",
                 use_container_width=True,
             )
+            clear_radar_clicked = st.button("清空自动新闻池", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            for record in records:
-                render_record(record)
-        else:
             st.markdown(
                 """
                 <div class="empty-state">
-                  这里会显示销售线索卡片。先在左侧输入关键词，点击“分析新闻”，再看 1-5 分评分和外联草稿。
+                  <b>它会自动做什么？</b><br>
+                  1. 从 Google News RSS 抓相关新闻<br>
+                  2. 自动分类成 ESS / EV / AI<br>
+                  3. 给销售相关性打 1-5 分<br>
+                  4. 生成推荐岗位、LinkedIn 话术和英文邮件
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-        st.markdown('</div>', unsafe_allow_html=True)
+
+            if clear_radar_clicked:
+                st.session_state.radar_records = []
+                st.rerun()
+
+        with radar_output_col:
+            st.markdown('<div class="panel">', unsafe_allow_html=True)
+            st.markdown('<div class="panel-title">今日雷达结果</div>', unsafe_allow_html=True)
+
+            if scan_clicked:
+                with st.spinner("正在扫描新闻源，通常需要几十秒..."):
+                    st.session_state.radar_records = scan_radar_news(
+                        per_topic_limit=per_topic_limit,
+                        extra_keyword=extra_keyword,
+                    )
+                if not st.session_state.radar_records:
+                    st.warning("这次没有抓到新闻。可以稍后再试，或在额外关键词里加 Germany / Europe / thermal safety。")
+
+            radar_records: List[Dict[str, str]] = st.session_state.radar_records
+            if radar_records:
+                filter_col1, filter_col2 = st.columns([0.45, 0.55])
+                with filter_col1:
+                    min_score = st.slider("最低相关性评分", 1, 5, 3, key="radar_min_score")
+                with filter_col2:
+                    selected_categories = st.multiselect(
+                        "分类筛选",
+                        ["ESS", "EV", "AI"],
+                        default=["ESS", "EV", "AI"],
+                        key="radar_category_filter",
+                    )
+                selected_categories = selected_categories or ["ESS", "EV", "AI"]
+
+                filtered_records = [
+                    record
+                    for record in radar_records
+                    if int(record.get("相关性评分", "1")) >= min_score
+                    and any(category in selected_categories for category in record_categories(record))
+                ]
+
+                metric_cols = st.columns(4)
+                metric_cols[0].metric("筛选后新闻", len(filtered_records))
+                metric_cols[1].metric(
+                    "高分线索",
+                    sum(int(record.get("相关性评分", "1")) >= 4 for record in filtered_records),
+                )
+                metric_cols[2].metric(
+                    "ESS",
+                    sum("ESS" in record_categories(record) for record in filtered_records),
+                )
+                metric_cols[3].metric(
+                    "EV / AI",
+                    sum(
+                        any(category in record_categories(record) for category in ["EV", "AI"])
+                        for record in filtered_records
+                    ),
+                )
+
+                if filtered_records:
+                    csv_bytes = records_to_csv(filtered_records)
+                    st.download_button(
+                        "导出当前筛选结果 CSV",
+                        data=csv_bytes,
+                        file_name=f"siltherm_auto_news_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                    )
+
+                    summary_tab, detail_tab = st.tabs(["总结版", "逐条分析"])
+                    with summary_tab:
+                        st.dataframe(
+                            build_summary_rows(filtered_records),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+                        st.markdown("#### 今日优先看")
+                        for record in filtered_records[:5]:
+                            st.markdown(
+                                f'- **{record.get("相关性评分", "1")}/5 · {record.get("分类", "")}** '
+                                f'{record.get("标题", "")}  \n'
+                                f'  {record.get("评分理由", "")}'
+                            )
+
+                    with detail_tab:
+                        selected_index = st.selectbox(
+                            "选择一条新闻查看完整分析",
+                            options=list(range(len(filtered_records))),
+                            format_func=lambda index: (
+                                f'{filtered_records[index].get("相关性评分", "1")}/5 · '
+                                f'{filtered_records[index].get("分类", "")} · '
+                                f'{filtered_records[index].get("标题", "")[:90]}'
+                            ),
+                        )
+                        selected_record = filtered_records[selected_index]
+                        if selected_record.get("链接"):
+                            st.markdown(f'[打开原文]({selected_record["链接"]})')
+                        render_record(selected_record)
+                else:
+                    st.markdown(
+                        """
+                        <div class="empty-state">
+                          当前筛选条件下没有新闻。可以把最低评分调低，或取消某些分类筛选。
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.markdown(
+                    """
+                    <div class="empty-state">
+                      还没有自动新闻池。点击左侧“一键扫描 ESS / EV / AI 新闻”，这里会先给总结版，再让你逐条点开分析。
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with manual_tab:
+        input_col, output_col = st.columns([0.92, 1.08], gap="large")
+
+        with input_col:
+            st.markdown('<div class="panel">', unsafe_allow_html=True)
+            st.markdown('<div class="panel-title">新闻输入</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hint-line">如果你已经有具体新闻，就在这里粘贴链接或正文单独分析。</div>', unsafe_allow_html=True)
+            input_type = st.radio(
+                "选择输入类型",
+                ["关键词", "新闻链接", "新闻正文"],
+                horizontal=True,
+            )
+
+            max_news = 5
+            title = ""
+            link = ""
+            body = ""
+            keyword = ""
+
+            if input_type == "关键词":
+                keyword = st.text_input(
+                    "关键词",
+                    value="BESS thermal safety Germany",
+                    placeholder="例如：BESS thermal safety Germany",
+                )
+                max_news = st.slider("抓取新闻数量", 1, 10, 5)
+            elif input_type == "新闻链接":
+                link = st.text_input(
+                    "新闻链接",
+                    placeholder="https://example.com/news/article",
+                )
+            else:
+                title = st.text_input("新闻标题", placeholder="粘贴新闻标题")
+                body = st.text_area("新闻正文", height=260, placeholder="粘贴新闻正文或摘要")
+                link = st.text_input("原文链接（可选）")
+
+            analyze_clicked = st.button("分析新闻", type="primary", use_container_width=True)
+
+            clear_clicked = st.button("清空本页结果", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            if clear_clicked:
+                st.session_state.records = []
+                st.rerun()
+
+        with output_col:
+            st.markdown('<div class="panel">', unsafe_allow_html=True)
+            st.markdown('<div class="panel-title">销售线索结果</div>', unsafe_allow_html=True)
+            if analyze_clicked:
+                try:
+                    new_records: List[Dict[str, str]] = []
+                    if input_type == "关键词":
+                        if not keyword.strip():
+                            st.warning("请先输入关键词。")
+                        else:
+                            items = fetch_google_news_rss(keyword.strip(), limit=max_news)
+                            if not items:
+                                st.warning("没有抓到新闻。可以换一个关键词，或直接粘贴新闻链接/正文。")
+                            for item in items:
+                                new_records.append(
+                                    analyze_item(
+                                        item["title"],
+                                        item["link"],
+                                        item["text"],
+                                        "关键词RSS",
+                                    )
+                                )
+                    elif input_type == "新闻链接":
+                        if not link.strip():
+                            st.warning("请先输入新闻链接。")
+                        else:
+                            fetched_title, fetched_text = fetch_url_text(link.strip())
+                            new_records.append(
+                                analyze_item(fetched_title, link.strip(), fetched_text, "新闻链接")
+                            )
+                    else:
+                        if not body.strip() and not title.strip():
+                            st.warning("请先粘贴新闻标题或正文。")
+                        else:
+                            new_records.append(analyze_item(title, link, body, "新闻正文"))
+
+                    st.session_state.records = new_records + st.session_state.records
+                except Exception as exc:
+                    st.error(f"分析失败：{exc}")
+                    st.info("如果网站无法抓取，可以复制新闻正文，切换到“新闻正文”再分析。")
+
+            records: List[Dict[str, str]] = st.session_state.records
+            if records:
+                csv_bytes = records_to_csv(records)
+                st.download_button(
+                    "导出 CSV",
+                    data=csv_bytes,
+                    file_name=f"siltherm_news_radar_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+
+                for record in records:
+                    render_record(record)
+            else:
+                st.markdown(
+                    """
+                    <div class="empty-state">
+                      这里会显示销售线索卡片。先输入关键词，点击“分析新闻”，再看 1-5 分评分和外联草稿。
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
 
     with st.sidebar:
         st.header("Siltherm Radar")
         st.caption("公网网页地址")
         st.code(PUBLIC_APP_URL)
-        st.header("重点行业")
-        st.write("EV battery packs")
-        st.write("BESS containers")
-        st.write("Residential energy storage")
-        st.write("VPP")
-        st.write("AI data center power infrastructure")
-        st.write("Electrical cabinets")
-        st.write("Battery thermal safety")
+        st.header("分类")
+        st.write("ESS：BESS、户储、VPP、储能安全")
+        st.write("EV：电池包、动力电池、整车电动化")
+        st.write("AI：AI 数据中心、电力基础设施、电力柜")
         st.header("评分")
         st.write("5 分：强相关，适合马上加入外联列表。")
         st.write("3-4 分：建议人工复核后跟进。")

@@ -655,12 +655,12 @@ def render_record(record: Dict[str, str]) -> None:
     """渲染单条分析结果。"""
     score = int(record["相关性评分"])
     score_color = {
-        1: "#9ca3af",
-        2: "#64748b",
-        3: "#2563eb",
-        4: "#d97706",
-        5: "#dc2626",
-    }.get(score, "#64748b")
+        1: "#eee9e2",
+        2: "#e6edf3",
+        3: "#e6f1fb",
+        4: "#fff2c8",
+        5: "#fde8ee",
+    }.get(score, "#e6edf3")
 
     st.markdown(
         f"""
@@ -725,7 +725,7 @@ def build_summary_rows(records: List[Dict[str, str]]) -> List[Dict[str, str]]:
 def main() -> None:
     st.set_page_config(
         page_title="Siltherm 行业新闻雷达",
-        page_icon="ST",
+        page_icon="S",
         layout="wide",
         initial_sidebar_state="collapsed",
     )
@@ -734,125 +734,135 @@ def main() -> None:
         """
         <style>
         :root {
-            --ink: #111827;
-            --muted: #526070;
-            --line: #e7edf4;
-            --panel: #ffffff;
-            --mint: #dff7ef;
-            --mint-ink: #0f766e;
-            --rose: #ffe8ef;
-            --rose-ink: #be496f;
-            --sky: #e3f2ff;
-            --sky-ink: #2563eb;
-            --butter: #fff4c9;
-            --butter-ink: #a16207;
-            --lavender: #efe9ff;
-            --lavender-ink: #6d5bd0;
+            --ink: #20242c;
+            --muted: #697586;
+            --line: #ece3d9;
+            --panel: #fffdfa;
+            --paper: #fbf7f1;
+            --mint: #dff3eb;
+            --mint-ink: #2f766a;
+            --rose: #fde8ee;
+            --rose-ink: #9a5870;
+            --sky: #e6f1fb;
+            --sky-ink: #3e6f99;
+            --butter: #fff2c8;
+            --butter-ink: #8c6a16;
+            --lavender: #eee9fb;
+            --lavender-ink: #665a92;
+            --sage: #e5eddb;
+            --taupe: #8b786d;
         }
-        .stApp {background: #fbfcff;}
-        .main .block-container {padding-top: 1rem; max-width: 1240px;}
+        .stApp {background: var(--paper);}
+        .main .block-container {padding-top: 1.35rem; max-width: 1180px;}
         h1, h2, h3, p {letter-spacing: 0;}
-        div[data-testid="stSidebar"] {background: #ffffff; border-right: 1px solid var(--line);}
-        .radar-hero {
-            background: #ffffff;
+        div[data-testid="stSidebar"] {background: #fffaf4; border-right: 1px solid var(--line);}
+        div[data-testid="stVerticalBlock"] {gap: .8rem;}
+        .topbar {
             color: var(--ink);
-            border-radius: 8px;
-            padding: 24px 26px;
-            margin-bottom: 16px;
-            border: 1px solid var(--line);
+            padding: 8px 2px 20px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--line);
             position: relative;
-            overflow: hidden;
-            box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
         }
-        .color-ribbon {
-            display:grid;
-            grid-template-columns: 1.2fr .9fr 1fr .8fr;
+        .brand-row {
+            display:flex;
+            justify-content:space-between;
             gap: 8px;
-            margin-bottom: 18px;
+            align-items:flex-start;
+            position:relative;
+            z-index:1;
         }
-        .color-ribbon span {
-            height: 8px;
-            border-radius: 99px;
-            display:block;
+        .brand-kicker {
+            color: var(--taupe);
+            font-size: .78rem;
+            font-weight: 760;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
         }
-        .brand-row {display:flex; justify-content:space-between; gap:16px; align-items:flex-start; position:relative; z-index:1;}
-        .app-title {font-size: 2rem; line-height:1.15; font-weight: 780; margin-bottom: .38rem;}
-        .app-subtitle {color: var(--muted); max-width: 760px;}
+        .app-title {
+            font-size: 2rem;
+            line-height:1.12;
+            font-weight: 780;
+            margin-bottom: .42rem;
+            color: var(--ink);
+        }
+        .app-subtitle {color: var(--muted); max-width: 700px; font-size: 1rem;}
         .local-badge {
-            border: 1px solid #d8e7f7;
+            border: 1px solid #eadfce;
             border-radius: 6px;
-            padding: 7px 9px;
-            color: var(--sky-ink);
-            background: var(--sky);
+            padding: 7px 10px;
+            color: #7a665b;
+            background: #fffaf4;
             font-size: .82rem;
             white-space: nowrap;
-            font-weight: 700;
+            font-weight: 680;
         }
-        .radar-strip {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+        .signal-bar {
+            display:flex;
+            flex-wrap:wrap;
             gap: 10px;
             margin-top: 18px;
-            position: relative;
-            z-index: 1;
+            align-items:center;
         }
-        .radar-tile {
-            background: #ffffff;
+        .soft-pill {
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: .84rem;
+            font-weight: 720;
+            color: var(--ink);
+            border: 1px solid rgba(32,36,44,.04);
+        }
+        .pill-mint {background: var(--mint); color: var(--mint-ink);}
+        .pill-rose {background: var(--rose); color: var(--rose-ink);}
+        .pill-sky {background: var(--sky); color: var(--sky-ink);}
+        .pill-butter {background: var(--butter); color: var(--butter-ink);}
+        .pill-lavender {background: var(--lavender); color: var(--lavender-ink);}
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 6px;
+            background: #fffaf4;
             border: 1px solid var(--line);
             border-radius: 8px;
-            padding: 11px 12px;
+            padding: 4px;
+            width: fit-content;
+            margin-bottom: 10px;
         }
-        .radar-tile b {display:block; font-size:1.05rem;}
-        .radar-tile span {display:block; margin-top:3px; color:var(--muted); font-size:.83rem;}
-        .tile-mint {background: var(--mint); border-color: #cceee4;}
-        .tile-rose {background: var(--rose); border-color: #f7d1de;}
-        .tile-butter {background: var(--butter); border-color: #f4e5a6;}
-        .steps {
-            display:grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin: -4px 0 16px;
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: var(--muted);
+            font-weight: 720;
         }
-        .step-box {
-            background:#fff;
-            border:1px solid var(--line);
-            border-radius:8px;
-            padding:13px 14px;
-        }
-        .step-box strong {
-            display:block;
-            color:var(--ink);
-            margin-bottom:4px;
-        }
-        .step-box span {
-            color:var(--muted);
-            font-size:.9rem;
+        .stTabs [aria-selected="true"] {
+            background: #ffffff;
+            color: var(--ink);
+            box-shadow: 0 3px 10px rgba(32,36,44,.05);
         }
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
             border-radius: 8px;
-            padding: 17px 18px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+            padding: 18px 18px;
+            box-shadow: 0 9px 24px rgba(79, 60, 42, .045);
         }
         .panel-title {
             font-weight: 760;
             color: var(--ink);
-            margin: 0 0 10px;
+            margin: 0 0 8px;
             font-size: 1.06rem;
         }
         .hint-line {
             color: var(--muted);
-            font-size: .9rem;
-            margin: -2px 0 14px;
+            font-size: .88rem;
+            margin: -2px 0 13px;
         }
         .result-card {
             border: 1px solid var(--line);
             border-radius: 8px;
-            padding: 17px 18px;
+            padding: 16px 17px;
             margin: 14px 0 10px;
-            background: #ffffff;
-            box-shadow: 0 9px 24px rgba(15, 23, 42, .05);
+            background: #fffefd;
+            box-shadow: 0 8px 22px rgba(79, 60, 42, .04);
         }
         .result-head {
             display: flex;
@@ -860,33 +870,66 @@ def main() -> None:
             gap: 16px;
             align-items: start;
         }
-        .result-card h3 {font-size: 1.15rem; margin: 0.1rem 0 .55rem;}
-        .eyebrow {font-size: .76rem; color: var(--mint-ink); font-weight: 800; text-transform: uppercase;}
-        .score {color: #fff; min-width: 54px; text-align: center; border-radius: 6px; padding: 8px 10px; font-weight: 760;}
+        .result-card h3 {font-size: 1.08rem; margin: 0.1rem 0 .55rem; color: var(--ink);}
+        .eyebrow {font-size: .72rem; color: var(--taupe); font-weight: 780; text-transform: uppercase;}
+        .score {color: var(--ink); min-width: 54px; text-align: center; border-radius: 6px; padding: 8px 10px; font-weight: 760;}
         .meta-row {display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;}
-        .meta-row span {background: #eef2f7; color: #334155; border-radius: 6px; padding: 5px 8px; font-size: .82rem;}
+        .meta-row span {background: #f5efe8; color: #5b4f48; border-radius: 999px; padding: 5px 9px; font-size: .8rem;}
         .empty-state {
-            border: 1px dashed #cad7e5;
+            border: 1px dashed #e1d4c7;
             border-radius: 8px;
-            padding: 22px;
-            background: #fffefe;
+            padding: 18px;
+            background: #fffaf4;
             color: var(--muted);
+            font-size: .92rem;
         }
         div.stButton > button[kind="primary"] {
-            background: #111827;
-            border: 1px solid #111827;
+            background: #2f343b;
+            border: 1px solid #2f343b;
             color: #ffffff;
             border-radius: 8px;
             font-weight: 760;
+            min-height: 2.55rem;
         }
         div.stButton > button:not([kind="primary"]) {
             border-radius: 8px;
+            border-color: #e1d4c7;
+            color: #584c44;
         }
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="select"] > div,
+        textarea {
+            border-radius: 8px !important;
+            background: #fffaf4 !important;
+            border-color: #e6dacd !important;
+        }
+        div[data-baseweb="radio"] label {
+            background: #fffaf4;
+            border: 1px solid #eadfce;
+            border-radius: 999px;
+            padding: 4px 10px;
+            margin-right: 4px;
+        }
+        div[data-testid="stDownloadButton"] button {
+            border-radius: 8px;
+            background: #fffaf4;
+            border-color: #e1d4c7;
+            color: #584c44;
+            font-weight: 720;
+        }
+        div[data-testid="stMetric"] {
+            background: #fffaf4;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        div[data-testid="stMetricLabel"] p {color: var(--muted); font-size: .78rem;}
+        div[data-testid="stMetricValue"] {color: var(--ink); font-size: 1.34rem;}
+        .stDataFrame {border-radius: 8px; overflow: hidden;}
         @media (max-width: 820px) {
             .brand-row {display:block;}
             .local-badge {display:inline-block; margin-top: 12px;}
-            .radar-strip {grid-template-columns: 1fr;}
-            .steps {grid-template-columns: 1fr;}
+            .signal-bar {gap: 8px;}
         }
         </style>
         """,
@@ -900,30 +943,22 @@ def main() -> None:
 
     st.markdown(
         f"""
-        <section class="radar-hero">
-          <div class="color-ribbon">
-            <span style="background:#dff7ef"></span>
-            <span style="background:#ffe8ef"></span>
-            <span style="background:#e3f2ff"></span>
-            <span style="background:#fff4c9"></span>
-          </div>
+        <section class="topbar">
           <div class="brand-row">
             <div>
+              <div class="brand-kicker">Siltherm Market Intelligence</div>
               <div class="app-title">Siltherm 行业新闻雷达</div>
-              <div class="app-subtitle">把欧洲 / 德国 / DACH 的行业新闻快速变成可跟进的销售线索、岗位建议和英文外联草稿。</div>
+              <div class="app-subtitle">Europe / Germany / DACH · advanced insulation materials and thermal management solutions</div>
             </div>
             <div class="local-badge">PUBLIC WEB APP · siltherm-news-radar.streamlit.app</div>
           </div>
-          <div class="radar-strip">
-            <div class="radar-tile tile-mint"><b>3 个核心分类</b><span>ESS、EV、AI，其他信息作为销售信号保留</span></div>
-            <div class="radar-tile tile-rose"><b>自动新闻池</b><span>一键扫描欧洲 / 德国 / DACH 相关新闻</span></div>
-            <div class="radar-tile tile-butter"><b>CSV 导出</b><span>可导入飞书多维表格继续跟进</span></div>
+          <div class="signal-bar">
+            <span class="soft-pill pill-mint">ESS</span>
+            <span class="soft-pill pill-rose">EV</span>
+            <span class="soft-pill pill-sky">AI</span>
+            <span class="soft-pill pill-butter">DACH Focus</span>
+            <span class="soft-pill pill-lavender">Sales Relevance 1-5</span>
           </div>
-        </section>
-        <section class="steps">
-          <div class="step-box"><strong>1. 自动扫新闻</strong><span>按 ESS / EV / AI 抓取大量新闻候选。</span></div>
-          <div class="step-box"><strong>2. 先看总结版</strong><span>快速扫评分、公司、国家和推荐岗位。</span></div>
-          <div class="step-box"><strong>3. 再逐条分析</strong><span>选择高分新闻，复制外联话术或导出 CSV。</span></div>
         </section>
         """,
         unsafe_allow_html=True,
@@ -958,11 +993,8 @@ def main() -> None:
             st.markdown(
                 """
                 <div class="empty-state">
-                  <b>它会自动做什么？</b><br>
-                  1. 从 Google News RSS 抓相关新闻<br>
-                  2. 自动分类成 ESS / EV / AI<br>
-                  3. 给销售相关性打 1-5 分<br>
-                  4. 生成推荐岗位、LinkedIn 话术和英文邮件
+                  <b>Radar scope</b><br>
+                  Google News RSS · ESS / EV / AI · Europe / Germany / DACH · CSV ready
                 </div>
                 """,
                 unsafe_allow_html=True,
